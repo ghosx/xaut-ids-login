@@ -59,7 +59,6 @@
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 		$data = curl_exec($ch);
 		curl_close($ch);
-		//要进去了
 		preg_match_all("/Set\-Cookie:([^;]*);/", $data, $match);
 		$cookie = substr($match[1][0], 1);
 		preg_match('/Location:([^;]*)\nC/', $data, $match);
