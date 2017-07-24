@@ -32,7 +32,7 @@
 				'Connection:keep-alive',
 				'Upgrade-Insecure-Requests:1');
 		$inf = get_data();
-		$post_data = "username=3161611083&password=077298&lt=$inf[0]&execution=$inf[1]&_eventId=$inf[2]";
+		$post_data = "username=".$username."&password=".$password."&lt=$inf[0]&execution=$inf[1]&_eventId=$inf[2]";
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
