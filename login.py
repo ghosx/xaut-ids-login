@@ -53,7 +53,6 @@ def go(ticket):
 		data = s.get(Location.split()[0]).text
 		print(data)
 
-
 User = 'XXX'
 Passwd = 'XXX'
 ticket = ticket(User,Passwd)
