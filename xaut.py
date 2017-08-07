@@ -16,7 +16,7 @@ headers = {
 def FuckUnicode(s):
 	return re.sub(';','',re.sub('&#x',r'\u',s)).encode('utf-8').decode('unicode_escape')
 
-def ticket(User,Passwd):
+def login(User,Passwd):
 	url = 'http://ids.xaut.edu.cn/authserver/login?service=http://my.xaut.edu.cn/login.portal'
 	html = s.get(url).text
 	lt = re.search(r'name="lt" value="(\S+)"',html)[1]
@@ -27,32 +27,20 @@ def ticket(User,Passwd):
 			'lt':lt,
 			'execution':execution,
 			'_eventId':_eventId,}
-	print(data)
 	res = s.post('http://ids.xaut.edu.cn/authserver/login?service=http://my.xaut.edu.cn/login.portal',data=data,allow_redirects=False,headers=headers)
-	try:
-		location1 = res.headers['Location']
-		a = s.get(location1,allow_redirects=False)
-		location2 = a.headers['Location']
-		b = s.get(location2).content
-		if 'ticket' in location1:
-			return location1
-		else:
-			return False
-	except:
-		return False
-def login(ticket):
+	ticket = res.headers['Location']
+	s.get(s.get(ticket,allow_redirects=False).headers['Location'])
 	headers['Host'] = 'my.xaut.edu.cn'
-	headers['Referer'] = 'http://ids.xaut.edu.cn/authserver/login?service=http%3A%2F%2Fmy.xaut.edu.cn%2Findex.portal'
-	if ticket != False:
-		res = s.get(ticket.split()[0],allow_redirects=False,headers=headers)
-		Location = res.headers['Location']
-		s.get(Location.split()[0])	
+	headers['Referer'] = 'http://ids.xaut.edu.cn/authserver/login?service=http://my.xaut.edu.cn/index.portal'
+	res = s.get(ticket.split()[0],allow_redirects=False,headers=headers)
+	Location = res.headers['Location']
+	s.get(Location.split()[0]).text
 def lib():
 	headers = {
 			'Referer':'http://my.xaut.edu.cn/index.portal',
 		}
 	proxies = {'http' : "socks5://127.0.0.1:1080"}
-	url = 'http://ids.xaut.edu.cn:80/authserver/login?service=http%3A%2F%2F202.200.117.7%3A8080%2Freader%2Fhwthau.php'
+	url = 'http://ids.xaut.edu.cn:80/authserver/login?service=http://202.200.117.7:8080/reader/hwthau.php'
 	Location = s.get(url,proxies=proxies,headers=headers,allow_redirects=False).headers['Location']
 	html = s.get(Location,proxies=proxies,headers=headers).content.decode('utf-8')
 	pattern = re.compile(r'<TD.*><span class="bluetext">(\S+)：\s*</span>\s?(\S*).*</TD>')
@@ -68,21 +56,13 @@ def lib():
 		l[2],l[3] = FuckUnicode(l[2]),FuckUnicode(l[3])
 		read_his.append(l)
 	return (read_info,read_his)
-def insert_info(i,**config):
+def insert_lib(i,h,**config):
 	conn = pymysql.connect(**config)
 	cur = conn.cursor()
 	sql = r"INSERT INTO `lib_info` VALUES(NULL,'"+i['读者证件号']+"','"+i['姓名']+"','"+i['性别']+"','"+i['读者条码号']+"','"+i['读者类型']\
 			+"','"+i['工作单位']+"','"+i['职业']+"','"+i['职称']+"','"+i['职位']+"','"+i['生效日期']+"','"+i['失效日期']\
 			+"','"+i['押金']+"','"+i['手续费']+"','"+i['累计借书']+"','"+i['违章状态']+"','"+i['欠款状态']+"')"
-	try:
-		cur.execute(sql)
-	finally:
-		conn.commit()
-		cur.close()
-		conn.close()
-def insert_his(h,**config):
-	conn = pymysql.connect(**config)
-	cur = conn.cursor()
+	cur.execute(sql)
 	for l in h:
 		sql = "INSERT INTO `lib_his` VALUES('"+l[0]+"','"+l[1]+"','"+l[2]+"','"+l[3]+"','"+l[4]+"','"+l[5]+\
 		"','"+l[6]+"')"
@@ -93,6 +73,18 @@ def insert_his(h,**config):
 	conn.commit()
 	cur.close()
 	conn.close()
+def finance():
+	url = 'http://202.200.112.65/tysfrz/'
+	s.get(url+'caslogin.aspx')
+	url = url+'jump.aspx?sysid=wscx'
+	html = s.get(url).content.decode('utf-8')
+	xh = re.search('学号：\s+</td>\s+<td width="15%">\s+<span id="(?:[^">]+)">(\d+)',html)[1]
+	yhkh = re.search('银行账号：</td>\s+<td colspan="9">\s+<span id="(?:[^">]+)">(\d+)</span>',html)[1]
+	print(yhkh)
+
+
+
+
 def main():
 	# 修改数据库配置信息
 	config={"host":"localhost", 
@@ -102,11 +94,11 @@ def main():
 			"db":"test",
 			"charset":'utf8'}
 
-	User = 'XXXXXX'
+	User = 'XXXXX'
 	Passwd = 'XXXXXX'	
-	login(ticket(User,Passwd))
-	insert_his(lib()[1],**config)
-	insert_info(dict(lib()[0]),**config)
+	login(User,Passwd)
+	finance()
+	insert_lib(dict(lib()[0]),lib()[1],**config)
 	print("大功告成!")
 if __name__ == '__main__':
 	main()
