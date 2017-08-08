@@ -34,7 +34,8 @@ def login(User,Passwd):
 	headers['Referer'] = 'http://ids.xaut.edu.cn/authserver/login?service=http://my.xaut.edu.cn/index.portal'
 	res = s.get(ticket.split()[0],allow_redirects=False,headers=headers)
 	Location = res.headers['Location']
-	s.get(Location.split()[0]).text
+	s.get(Location.split()[0])
+	return True
 def lib():
 	headers = {
 			'Referer':'http://my.xaut.edu.cn/index.portal',
@@ -74,17 +75,35 @@ def insert_lib(i,h,**config):
 	cur.close()
 	conn.close()
 def finance():
+	info = []
 	url = 'http://202.200.112.65/tysfrz/'
 	s.get(url+'caslogin.aspx')
 	url = url+'jump.aspx?sysid=wscx'
 	html = s.get(url).content.decode('utf-8')
-	xh = re.search('学号：\s+</td>\s+<td width="15%">\s+<span id="(?:[^">]+)">(\d+)',html)[1]
-	yhkh = re.search('银行账号：</td>\s+<td colspan="9">\s+<span id="(?:[^">]+)">(\d+)</span>',html)[1]
-	print(yhkh)
-
-
-
-
+	page = re.search(r'id="[^"]+">(\d)',html)[1]
+	reg = r'<tr class="[^"]+"(?: bgcolor="[^"]+")?(?: style="[^"]+")?>\s+<td>([^<]+)</td><td>([^<]+)</td><td class="numberCol">([^<]+)</td><td align="right">\s+<a id=\S+\s+[^>]+>([^<]+)?</a>\s+</td><td align="right">\s+<a id=\S+\s+[^>]+>([^<]+)?</a>\s+</td><td align="right">\s+<a id=\S+\s+[^>]+>([^<]+)?</a>\s+</td><td class="numberCol">([^<]+)?</td>'
+	pattern = re.compile(reg)
+	a = pattern.findall(html)
+	for l in a:
+		info.append(l)
+	if page != '1':
+		# 翻页
+		data = {
+			'__VIEWSTATE':re.search(r'name="__VIEWSTATE" id="__VIEWSTATE"\s+value="([^"]+)"',html)[1],
+			'ctl00$ContentPlaceHolder1$TabContainer_jf$TabPanel1$PageSpliter_zwxm_sf$LBNext.x':'6',
+			'ctl00$ContentPlaceHolder1$TabContainer_jf$TabPanel1$PageSpliter_zwxm_sf$LBNext.y':'9'
+		}
+		html = s.post('http://202.200.112.65/web50/Views/Jgcwxx/Welcome.aspx',data=data).content.decode('utf-8')
+		b = pattern.findall(html)
+		for l in b:
+			info.append(l)
+	try:
+		# 有的学生没有银行账号信息
+		xh = re.search('学号：\s+</td>\s+<td width="15%">\s+<span id="(?:[^">]+)">(\d+)',html)[1]
+		yhkh = re.search('银行账号：</td>\s+<td colspan="9">\s+<span id="(?:[^">]+)">(\d+)</span>',html)[1]
+		return (info,xh,yhkh)
+	except:
+		return info
 def main():
 	# 修改数据库配置信息
 	config={"host":"localhost", 
@@ -94,11 +113,16 @@ def main():
 			"db":"test",
 			"charset":'utf8'}
 
-	User = 'XXXXX'
+	User = 'XXXXXX'
 	Passwd = 'XXXXXX'	
+
 	login(User,Passwd)
-	finance()
-	insert_lib(dict(lib()[0]),lib()[1],**config)
+	print(finance())
+	# insert_lib(dict(lib()[0]),lib()[1],**config)
 	print("大功告成!")
 if __name__ == '__main__':
 	main()
+
+
+
+
